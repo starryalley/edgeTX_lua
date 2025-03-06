@@ -253,12 +253,12 @@ local function drawGvars()
   if getLogicalSwitchValue(7) then -- L08 on means Drag brake is ON
     lcd.drawText(0, LCD_H - 29 , "DbR", SMLSIZE)
   else
-    lcd.drawText(2, LCD_H - 29 , "NoDrag", SMLSIZE + INVERS)
+    lcd.drawText(2, LCD_H - 30 , "NoDrag", SMLSIZE + INVERS)
   end
-  lcd.drawText(FW, LCD_H - 15 , "St", SMLSIZE)
-  lcd.drawText(FW, LCD_H - 22 , "Th", SMLSIZE)
-  lcd.drawText(FW, LCD_H - 15 , CHAR_CYC, RIGHT + INVERS)
-  lcd.drawText(FW, LCD_H - 22 , CHAR_CYC, RIGHT + INVERS)
+  lcd.drawText(FW, LCD_H - 22 , "St", SMLSIZE)
+  lcd.drawText(FW, LCD_H - 15 , "Th", SMLSIZE)
+  lcd.drawText(FW, LCD_H - 22 , CHAR_CYC, RIGHT)
+  lcd.drawText(FW, LCD_H - 15 , CHAR_CYC, RIGHT)
 
   -- lower right
   lcd.drawText(16*FW + 1, LCD_H - 15 , "ThR", SMLSIZE)
