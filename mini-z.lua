@@ -107,7 +107,7 @@ local function drawTimer3()
 end
 
 --FUNCTUON: draw Stick
-local function drawStick(centrex, xval, yval)
+local function drawStickAir(centrex, xval, yval)
   local BOX_CENTERY = (LCD_H - 9 - (BOX_WIDTH-1) / 2)
   lcd.drawRectangle(centrex - (BOX_WIDTH-1) / 2, BOX_CENTERY - (BOX_WIDTH-1) / 2, BOX_WIDTH , BOX_WIDTH)
   lcd.drawLine(centrex, BOX_CENTERY + 1, centrex, BOX_CENTERY - 1, SOLID, 0)
@@ -116,6 +116,31 @@ local function drawStick(centrex, xval, yval)
   yval = BOX_CENTERY - math.floor(yval / 2048 * (BOX_WIDTH - 5) + 0.5)
   lcd.drawFilledRectangle(xval - 2, yval - 1, 5, 3)
   lcd.drawFilledRectangle(xval - 1, yval - 2, 3, 5)
+end
+
+local function drawStickSurfaceThrottle(centrex, val)
+  local BOX_CENTERY = (LCD_H - 9 - (BOX_WIDTH-1) / 2)
+  lcd.drawRectangle(centrex - (BOX_WIDTH-1) / 2, BOX_CENTERY - (BOX_WIDTH-1) / 2, BOX_WIDTH , BOX_WIDTH)
+  
+  xval = math.floor(val / 2048 * (BOX_WIDTH/2) + 0.5)
+  if xval ~= 0 then
+    lcd.drawLine(centrex - xval, BOX_CENTERY, centrex, BOX_CENTERY - xval, SOLID, 0)
+    lcd.drawLine(centrex + xval, BOX_CENTERY, centrex, BOX_CENTERY - xval, SOLID, 0)
+    lcd.drawPoint(centrex, BOX_CENTERY - xval)
+  end
+  -- horizontal base line that doesn't change
+  lcd.drawLine(centrex - BOX_WIDTH/4, BOX_CENTERY, centrex + BOX_WIDTH/4, BOX_CENTERY, SOLID, 0)
+end
+
+local function drawStickSurfaceSteer(centrex, val)
+  local BOX_CENTERY = (LCD_H - 9 - (BOX_WIDTH-1) / 2)
+  lcd.drawRectangle(centrex - (BOX_WIDTH-1) / 2, BOX_CENTERY - (BOX_WIDTH-1) / 2, BOX_WIDTH , BOX_WIDTH)
+  
+  yval = math.floor(val / 2048 * (BOX_WIDTH/4) + 0.5)
+  lcd.drawLine(centrex-BOX_WIDTH/4+yval, BOX_CENTERY-BOX_WIDTH/6, centrex-BOX_WIDTH/4-yval, BOX_CENTERY+BOX_WIDTH/6, SOLID, 0)
+  lcd.drawLine(centrex+BOX_WIDTH/4+yval, BOX_CENTERY-BOX_WIDTH/6, centrex+BOX_WIDTH/4-yval, BOX_CENTERY+BOX_WIDTH/6, SOLID, 0)
+  -- horizontal base line that doesn't change
+  lcd.drawLine(centrex - BOX_WIDTH/8, BOX_CENTERY, centrex + BOX_WIDTH/8, BOX_CENTERY, SOLID, 0)
 end
 
 --FUNCTION: draw Pot Bars
@@ -296,8 +321,8 @@ local function run()
     drawSwitchSymbol (PHASE_X, PHASE_Y+FH, "A", getValue("sa"))
   end
 --drawSwitchSymbol (18*FW - 8, 33, "B", getValue("sb"))
-  drawStick(RBOX_CENTERX, getValue("ste"), 0)
-  drawStick(LBOX_CENTERX, 0, getValue("thr"))
+  drawStickSurfaceSteer(RBOX_CENTERX, getValue("ste"))
+  drawStickSurfaceThrottle(LBOX_CENTERX, getValue("thr"))
   drawPotsBars()
   displayTrims()
   drawRTC(blinkCount)
