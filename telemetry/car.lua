@@ -1,6 +1,7 @@
 -------------------------
 -- based on https://www.rctech.net/forum/showpost.php?p=16138355&postcount=528
--- For my mini-z RWD/AWD
+-- For my RC cars (mini-z AWD/RWD/Buggy, 1/10 touring car and race buggy)
+-- probably not for crawlers
 ------- CONSTANTS -------
 local BOX_WIDTH = 23
 local FW = 6
