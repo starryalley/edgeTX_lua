@@ -269,8 +269,8 @@ local function drawGvars()
   if getLogicalSwitchValue(7) then -- L08 on means Drag brake is ON
     lcd.drawNumber(5*FW + 2, LCD_H - 29 , dbRate, SMLSIZE + RIGHT + INVERS)
   end
-  lcd.drawNumber(5*FW + 2, LCD_H - 15 , strExpo, SMLSIZE + RIGHT + INVERS)
-  lcd.drawNumber(5*FW + 2, LCD_H - 22 , thrExpo, SMLSIZE + RIGHT + INVERS)
+  lcd.drawNumber(5*FW + 2, LCD_H - 22 , strExpo, SMLSIZE + RIGHT + INVERS)
+  lcd.drawNumber(5*FW + 2, LCD_H - 15 , thrExpo, SMLSIZE + RIGHT + INVERS)
   -- value for lower right
   lcd.drawNumber(LCD_W, LCD_H - 15 , thrRate, SMLSIZE + RIGHT + INVERS)
 end
