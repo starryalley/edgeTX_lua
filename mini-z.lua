@@ -75,7 +75,7 @@ local function drawAntenna()
 end
 
 --FUNCTION: draw Timer1
-local function drawTimer1(blinkCount)
+local function drawTimer1(blinkCount, showName)
   local timer1Value = model.getTimer(0).value
   local timer1Name = model.getTimer(0).name
   if math.abs(timer1Value) > 60 * 60 then
@@ -83,10 +83,14 @@ local function drawTimer1(blinkCount)
   end
   if timer1Value < 0 then
     lcd.drawTimer(124, 2 * FH, timer1Value, RIGHT + DBLSIZE + BLINK + INVERS)
-    lcd.drawText(69, 3 * FH, timer1Name, RIGHT)
+    if showName then
+      lcd.drawText(69, 3 * FH, timer1Name, RIGHT)
+    end
   else
     lcd.drawTimer(124, 2 * FH, timer1Value, RIGHT + DBLSIZE)
-    lcd.drawText(76, 3 * FH, timer1Name, RIGHT)
+    if showName then
+      lcd.drawText(76, 3 * FH, timer1Name, RIGHT)
+    end
     if blinkCount < 50 and getLogicalSwitchValue(0) then
       lcd.drawText(96, 2 * FH, " ", DBLSIZE)
     end
@@ -311,15 +315,18 @@ local function run()
   displayBattVoltage(blinkCount)
   drawFM()
   local rssi = drawAntenna()
-  drawTimer1(blinkCount)
-  drawTimer3()
+
   
 --drawSwitchSymbol (3*FW - 6, 33, "A", getValue("sa"))
   if rssi > 0 then
     drawSwitchSymbol (PHASE_X+FW*3, PHASE_Y+FH, "A", getValue("sa"))
+    drawTimer1(blinkCount, false)
   else
     drawSwitchSymbol (PHASE_X, PHASE_Y+FH, "A", getValue("sa"))
+    drawTimer1(blinkCount, true)
   end
+  drawTimer3()
+
 --drawSwitchSymbol (18*FW - 8, 33, "B", getValue("sb"))
   drawStickSurfaceSteer(RBOX_CENTERX, getValue("ste"))
   drawStickSurfaceThrottle(LBOX_CENTERX, getValue("thr"))
