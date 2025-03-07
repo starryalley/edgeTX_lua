@@ -71,6 +71,7 @@ local function drawAntenna()
       lcd.drawFilledRectangle(RSSSI_X + i * 4, RSSSI_Y - 2 * i + 1, 3, 2 * i - 1)
     end
   end
+  return rssiValue
 end
 
 --FUNCTION: draw Timer1
@@ -284,12 +285,16 @@ local function run()
   
   displayBattVoltage(blinkCount)
   drawFM()
-  drawAntenna()
+  local rssi = drawAntenna()
   drawTimer1(blinkCount)
   drawTimer3()
   
 --drawSwitchSymbol (3*FW - 6, 33, "A", getValue("sa"))
-  drawSwitchSymbol (PHASE_X+1, PHASE_Y+FH, "A", getValue("sa"))
+  if rssi > 0 then
+    drawSwitchSymbol (PHASE_X+FW*3, PHASE_Y+FH, "A", getValue("sa"))
+  else
+    drawSwitchSymbol (PHASE_X, PHASE_Y+FH, "A", getValue("sa"))
+  end
 --drawSwitchSymbol (18*FW - 8, 33, "B", getValue("sb"))
   drawStick(RBOX_CENTERX, getValue("ste"), 0)
   drawStick(LBOX_CENTERX, 0, getValue("thr"))
