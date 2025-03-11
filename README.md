@@ -10,3 +10,15 @@ This is the collection of lua scripts that I use in my [EdgeTX](https://github.c
 
 This is a telemetry screen that displays important setups for RC cars (for my mini-z's and 1/10 touring car and buggy). It's probably not for crawlers.
 
+## Mixes
+
+### drgbrk.lua
+
+TX initiated drag braking simulation
+
+### abs.lua
+
+Anti-lock Braking System (ABD) simulation
+
+
+
