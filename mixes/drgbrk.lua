@@ -9,7 +9,9 @@ Drag brake for cars.
 INPUT:
   Thr: SOURCE, should be set to the throttle channel
   DgB: SOURCE, the drag braking strength in percentage (-100% to 0%). Assign a global variable (set to %) to this
-  Dur-ms: SOURCE, the braking duration in ms. Assign a global variable to this
+  Dur-ms: VALUE, the braking duration in ms. Default 1 second.
+  PosThT: VALUE, positive throttle threshold to activate drag braking, default 10
+  NegThT: VALUE, negative throttle threshold to activate drag braking, default -1
 
 OUTPUT:
   DrgB: this should be "add"ed to the throttle mixer so it applies the brake
@@ -22,9 +24,9 @@ Usage in Mix:
 local input = {
     {"Thr", SOURCE},
     {"DgB", SOURCE},
-    {"Dur-ms", SOURCE},
-    {"PosThT", VALUE, -2, 20, 10}, -- positive throttle threshold, default 10
-    {"NegThT", VALUE, -20, 2, -1}, -- negative throttle threshold, default -1
+    {"Dur-ms", VALUE, 5, 5000, 1000},
+    {"PosThT", VALUE, -2, 20, 10},
+    {"NegThT", VALUE, -20, 2, -1},
 }
 
 local output = {"DrgB"}
