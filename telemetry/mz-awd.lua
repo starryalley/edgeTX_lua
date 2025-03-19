@@ -162,6 +162,18 @@ local function displayTrims()
   local vert = {60, 60, TRIM_LEN + 3, TRIM_LEN + 3, TRIM_LEN + 3}
   local idTrim = {"trim-ste", "trim-thr", "trim-t3", "trim-t4", "trim-t5"}
   local modeTrim = {"sqr", "sqr", "main", "main", "sub"}--sqr,main,sub,none
+  local enabled = {true, true, true, true, true} -- if this trim is enabled
+
+  -- check if trim is enabled for current flight mode
+  local fmno, _ = getFlightMode()
+  local t = model.getFlightMode(fmno)
+  for i = 1, 5, 1 do
+    -- trim disabled
+    if t.trimsModes[i] == 31 then
+      enabled[i] = false
+    end
+  end
+
   for i = 1, 5, 1 do
     local xm = x[i]
     local ym = vert[i]
@@ -173,10 +185,20 @@ local function displayTrims()
     if dir < -TRIM_LEN then
       dir = -TRIM_LEN
     end
+    -- line pattern is dotted when trim is disabled
+    local pattern = SOLID
+    if not enabled[i] then
+      pattern = DOTTED
+    end
     
     if vert[i] == TRIM_LEN + 3 then
       if i < 5 then
-        lcd.drawLine(xm, ym - TRIM_LEN, xm, ym + TRIM_LEN, SOLID, 0)
+        -- make left vertical trim line shorter because we use the lower part for other info
+        if i == 4 then
+          lcd.drawLine(xm, ym - TRIM_LEN, xm, ym + TRIM_LEN-4, pattern, 0)
+        else
+          lcd.drawLine(xm, ym - TRIM_LEN, xm, ym + TRIM_LEN, pattern, 0)
+        end
         if modeTrim[i] == "sqr" then
           lcd.drawFilledRectangle(xm - 1, ym - 1, 3, 3, FORCE)
         end
@@ -192,31 +214,37 @@ local function displayTrims()
           lcd.drawLine(xm - 1, ym + 1, xm + 1, ym + 1, SOLID, 0)
         end
       elseif modeTrim[i] == "sub" then
-        lcd.drawLine(xm - 1, ym, xm - 1, ym, SOLID, 0)
-        lcd.drawLine(xm - 2, ym - 1, xm - 2, ym + 1, SOLID, 0)
-        lcd.drawLine(xm - 3, ym - 2, xm - 3, ym + 2, SOLID, 0)
+        if enabled[i] then
+          lcd.drawLine(xm - 1, ym, xm - 1, ym, SOLID, 0)
+          lcd.drawLine(xm - 2, ym - 1, xm - 2, ym + 1, SOLID, 0)
+          lcd.drawLine(xm - 3, ym - 2, xm - 3, ym + 2, SOLID, 0)
+        end
       elseif modeTrim[i] == "main" then
-        lcd.drawLine(xm + 1, ym, xm + 1, ym, SOLID, 0)
-        lcd.drawLine(xm + 2, ym - 1, xm + 2, ym + 1, SOLID, 0)
-        lcd.drawLine(xm + 3, ym - 2, xm + 3, ym + 2, SOLID, 0)
+        if enabled[i] then
+          lcd.drawLine(xm + 1, ym, xm + 1, ym, SOLID, 0)
+          lcd.drawLine(xm + 2, ym - 1, xm + 2, ym + 1, SOLID, 0)
+          lcd.drawLine(xm + 3, ym - 2, xm + 3, ym + 2, SOLID, 0)
+        end
       end
     
     else
       if i < 5 then
-        lcd.drawLine(xm - TRIM_LEN, ym, xm + TRIM_LEN, ym, SOLID, 0)
-        if modeTrim[i] == "sqr" then
+        lcd.drawLine(xm - TRIM_LEN, ym, xm + TRIM_LEN, ym, pattern, 0)
+        if enabled[i] and modeTrim[i] == "sqr" then
           lcd.drawFilledRectangle(xm - 1, ym - 1, 3, 3, FORCE)
         end
       end
       xm = xm + dir
       if modeTrim[i] == "sqr" then
-        lcd.drawFilledRectangle(xm - 3, ym - 2, 7, 5, FORCE)
-        lcd.drawFilledRectangle(xm - 2, ym - 3, 5, 7)
-        if val >= 0 then
-          lcd.drawLine(xm + 1, ym - 1, xm + 1, ym + 1, SOLID, 0)
-        end
-        if val <= 0 then
-          lcd.drawLine(xm - 1, ym - 1, xm - 1, ym + 1, SOLID, 0)
+        if enabled[i] then
+          lcd.drawFilledRectangle(xm - 3, ym - 2, 7, 5, FORCE)
+          lcd.drawFilledRectangle(xm - 2, ym - 3, 5, 7)
+          if val >= 0 then
+            lcd.drawLine(xm + 1, ym - 1, xm + 1, ym + 1, SOLID, 0)
+          end
+          if val <= 0 then
+            lcd.drawLine(xm - 1, ym - 1, xm - 1, ym + 1, SOLID, 0)
+          end
         end
       elseif modeTrim[i] == "main" then
         lcd.drawLine(xm, ym - 1, xm, ym - 1, SOLID, 0)
