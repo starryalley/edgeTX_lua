@@ -22,6 +22,20 @@ It is a heavy modifed version based on car.lua.
 
 The difference between AWD and RWD is just that RWD doesn't have traction control enabled at all (doesn't need) although I also don't know about ABS. But drag braking is useful (for some).
 
+### Ultima
+
+Ultima 1/10 buggy dashboard.
+
+### DA4
+
+Drift Art 4 dashboard.
+
+### SCX30
+
+SCX30 crawler dashboard.
+
+I use ELRS (for the first time) so I got the nice battery pack voltage telemetry. Hence a custom dashboard to view 2 timers along with the pack battery.
+
 
 ## Mixes
 
