@@ -14,6 +14,11 @@ local PACK_FULL = 8.40
 local PACK_EMPTY = 6.40
 local LOW_PACK = 6.60
 
+-- Keep these in sync with USER SETTINGS in mixes/coast.lua.
+local COAST_TIME_MIN = 0.10
+local COAST_TIME_MID = 1.20
+local COAST_TIME_MAX = 2.20
+
 local function clamp(value, low, high)
   if value < low then return low end
   if value > high then return high end
@@ -76,21 +81,41 @@ local function drawSignalBars(x, bottom, quality)
   end
 end
 
+local function drawCoast()
+  -- MT12 FL1 is exposed as s3, as in the other surface dashboards.
+  local enabled = (getValue("s3") or 0) > 0
+  local knob = clamp((getValue("s2") or 0) / 1024, -1, 1)
+  local seconds
+  if knob <= 0 then
+    seconds = COAST_TIME_MIN + (COAST_TIME_MID - COAST_TIME_MIN) * (knob + 1)
+  else
+    seconds = COAST_TIME_MID + (COAST_TIME_MAX - COAST_TIME_MID) * knob
+  end
+
+  lcd.drawText(2, 11, "COAST", SMLSIZE)
+  lcd.drawText(32, 11, enabled and "ON" or "OFF",
+    SMLSIZE + (enabled and INVERS or 0))
+  lcd.drawText(54, 11, string.format("%.2fs", seconds), SMLSIZE)
+  -- Position is the selected knob setting, including when coast is off.
+  drawBar(91, 11, 35, 6, knob, -1, 1)
+end
+
 local function run(event)
   lcd.clear()
 
   local fm, mode = getFlightMode()
   if mode == nil or mode == "" then mode = "FM" .. fm end
 
-  -- Header: the active drive mode is the most important crawler setting.
-  lcd.drawFilledRectangle(0, 0, W, 17)
-  lcd.drawText(3, 0, mode, DBLSIZE + INVERS)
+  -- One-line header: D = drive time (mm:ss), T = total time (hh:mm).
+  lcd.drawFilledRectangle(0, 0, W, 9)
+  lcd.drawText(2, 1, mode, SMLSIZE + INVERS)
   local driveTimer = model.getTimer(0)
   local totalTimer = model.getTimer(2)
-  lcd.drawText(W - 1, 0, "TMD " .. formatMinutesSeconds(driveTimer and driveTimer.value),
+  lcd.drawText(W - 1, 1,
+    "D" .. formatMinutesSeconds(driveTimer and driveTimer.value)
+      .. " T" .. formatHoursMinutes(totalTimer and totalTimer.value),
     RIGHT + SMLSIZE + INVERS)
-  lcd.drawText(W - 1, 8, "TOT " .. formatHoursMinutes(totalTimer and totalTimer.value),
-    RIGHT + SMLSIZE + INVERS)
+  drawCoast()
 
   -- Left panel: receiver-reported 2S battery.
   local rxBattery = getValue("RxBt") or 0
