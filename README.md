@@ -39,6 +39,14 @@ I use ELRS (for the first time) so I got the nice battery pack voltage telemetry
 
 ## Mixes
 
+### Bouncer
+
+[Bouncer model and controls](models/Bouncer.md), with `telemetry/bouncer.lua`
+and the Trail-only `mixes/bcoast.lua` mixer. Combines drive modes, 4WS overrides,
+live outputs, battery/link telemetry and two timers on one MT12 screen.
+
+![Bouncer dashboard preview](screenshots/bouncer-trail.png)
+
 ### drgbrk.lua
 
 TX initiated drag braking simulation
@@ -50,4 +58,3 @@ Anti-lock Braking System (ABS) simulation
 ### tractl.lua
 
 Traction control simulation
-
