@@ -1,8 +1,9 @@
 -- SCX30 ELRS crawler dashboard for the RadioMaster MT12 (128x64)
--- Model: SCX30 ELRS / model08.yml
+-- Model: SCX30 / document1.etx MODELS/model09.yml
 --
--- The model uses GV1 as the throttle limit for each drive mode and L6 as
--- the 40% steering-expo toggle. RxBt is the receiver-reported 2S pack.
+-- GV1 sets throttle limit; P1 controls CH2 throttle expo in this model.
+-- The expo readout is capped at +/-50; this does not limit the model itself.
+-- RxBt is the receiver-reported 2S pack.
 
 local W = LCD_W
 local H = LCD_H
@@ -12,7 +13,6 @@ local FOOTER_TEXT_Y = FOOTER_TOP + 1
 
 local PACK_FULL = 8.40
 local PACK_EMPTY = 6.40
-local LOW_PACK = 6.60
 
 -- Keep these in sync with USER SETTINGS in mixes/coast.lua.
 local COAST_TIME_MIN = 0.10
@@ -25,8 +25,16 @@ local function clamp(value, low, high)
   return value
 end
 
-local function percent(value)
-  return math.floor(value * 100 / 1024 + (value >= 0 and 0.5 or -0.5))
+-- Centre-zero output bars, matching bounce.lua, inverted for the footer.
+local function drawOutputBar(x, y, value)
+  local half = 9
+  local fill = math.min(half, math.floor(math.abs(value) * half / 1024 + 0.5))
+  lcd.drawLine(x, y + 1, x + 2 * half, y + 1, SOLID, ERASE)
+  lcd.drawLine(x + half, y, x + half, y + 2, SOLID, ERASE)
+  if fill > 0 then
+    lcd.drawFilledRectangle(value < 0 and x + half - fill or x + half,
+      y, fill, 3, ERASE)
+  end
 end
 
 local function drawBar(x, y, width, height, value, minimum, maximum)
@@ -37,8 +45,9 @@ local function drawBar(x, y, width, height, value, minimum, maximum)
   end
 end
 
-local function drawBattery(voltage, blink)
-  lcd.drawText(2, 19, "PACK", SMLSIZE)
+local function drawBattery(voltage, lowBattery)
+  lcd.drawText(2, 19, lowBattery and "LOW BATT" or "PACK",
+    SMLSIZE + (lowBattery and INVERS or 0))
 
   if voltage <= 0 then
     lcd.drawText(3, 27, "--.-V", MIDSIZE + BLINK)
@@ -48,7 +57,7 @@ local function drawBattery(voltage, blink)
   end
 
   local flags = MIDSIZE
-  if voltage <= LOW_PACK and blink then flags = flags + BLINK end
+  if lowBattery then flags = flags + BLINK end
   lcd.drawNumber(3, 26, math.floor(voltage * 10 + 0.5), flags + PREC1)
   lcd.drawText(lcd.getLastRightPos() + 1, 26, "V", flags)
   lcd.drawNumber(4, 40, math.floor(voltage * 5 + 0.5), SMLSIZE + PREC1)
@@ -68,17 +77,6 @@ local function formatMinutesSeconds(seconds)
   local minutes = math.floor(seconds / 60)
   local remainder = seconds % 60
   return string.format("%02d:%02d", minutes, remainder)
-end
-
-local function drawSignalBars(x, bottom, quality)
-  for i = 1, 4 do
-    local height = i * 2 + 1
-    local top = bottom - height + 1
-    lcd.drawRectangle(x + (i - 1) * 5, top, 3, height)
-    if quality >= (i - 1) * 25 + 1 then
-      lcd.drawFilledRectangle(x + (i - 1) * 5 + 1, top + 1, 1, height - 2)
-    end
-  end
 end
 
 local function drawCoast()
@@ -119,42 +117,48 @@ local function run(event)
 
   -- Left panel: receiver-reported 2S battery.
   local rxBattery = getValue("RxBt") or 0
-  drawBattery(rxBattery, (getTime() % 100) < 50)
+  drawBattery(rxBattery, getLogicalSwitchValue(7)) -- L08, zero-based API
 
   -- Divider and live setup values.
   lcd.drawLine(60, 19, 60, FOOTER_TOP - 1, SOLID, 0)
   local throttleMax = model.getGlobalVariable(0, fm)
-  local expoOn = getLogicalSwitchValue(5) -- L6: 40% steering expo mix
-  local steerExpo = expoOn and 40 or 0
+  local expo = clamp(math.floor((getValue("s1") or 0) * 100 / 1024 + 0.5), -50, 50)
   local linkQuality = getValue("RQly") or 0
 
   lcd.drawText(64, 19, "THR MAX", SMLSIZE)
   lcd.drawNumber(W - 9, 18, throttleMax, RIGHT + MIDSIZE)
   lcd.drawText(W - 8, 21, "%", SMLSIZE)
 
-  lcd.drawText(64, 31, "STE EXPO", SMLSIZE)
-  lcd.drawNumber(W - 9, 30, steerExpo, RIGHT + MIDSIZE)
-  lcd.drawText(W - 8, 33, "%", SMLSIZE)
+  lcd.drawText(64, 31, "EXP (P1)", SMLSIZE)
+  lcd.drawText(W - 1, 31, string.format("%d%%", expo), RIGHT + SMLSIZE)
 
-  lcd.drawText(64, 43, "LQ", SMLSIZE)
-  if linkQuality > 0 then
-    lcd.drawNumber(105, 42, linkQuality, RIGHT + MIDSIZE)
-  else
-    lcd.drawText(105, 42, "---", RIGHT + MIDSIZE)
-  end
-  drawSignalBars(109, FOOTER_TOP - 1, linkQuality)
+  -- MT12 T1 = steering, T2 = throttle. Trim sources are 8 * trim units.
+  -- Only steering trim is displayed, directly below expo.
+  local steerTrim = math.floor((getValue("trim-ste") or 0) / 8 + 0.5)
+  lcd.drawText(64, 39, "TR " .. steerTrim, SMLSIZE)
 
-  -- Footer: live controls and useful neutral references.
+  -- Compact radio status below trim: TX voltage and link quality.
+  local txVoltage = getValue("tx-voltage") or 0
+  lcd.drawText(64, 47, txVoltage > 0 and string.format("TX%.1fV", txVoltage)
+    or "TX--.-V", SMLSIZE)
+  lcd.drawText(W - 1, 47, linkQuality > 0 and string.format("LQ %d", linkQuality)
+    or "LQ ---", RIGHT + SMLSIZE)
+
+  -- Footer: live controls and clock.
   lcd.drawFilledRectangle(0, FOOTER_TOP, W, H - FOOTER_TOP)
-  local throttle = percent(getValue("thr") or 0)
-  local steering = percent(getValue("ste") or 0)
-  local steerTrim = math.floor((getValue("trim-ste") or 0) * 100 / 1024 + 0.5)
-  lcd.drawText(2, FOOTER_TEXT_Y, "T", SMLSIZE + INVERS)
-  lcd.drawNumber(10, FOOTER_TEXT_Y, throttle, SMLSIZE + INVERS)
-  lcd.drawText(37, FOOTER_TEXT_Y, "S", SMLSIZE + INVERS)
-  lcd.drawNumber(45, FOOTER_TEXT_Y, steering, SMLSIZE + INVERS)
-  lcd.drawText(72, FOOTER_TEXT_Y, "TRIM", SMLSIZE + INVERS)
-  lcd.drawNumber(W - 2, FOOTER_TEXT_Y, steerTrim, RIGHT + SMLSIZE + INVERS)
+  local throttle = getValue("ch2") or 0
+  local steering = getValue("ch1") or 0
+  lcd.drawText(2, FOOTER_TEXT_Y, "S", SMLSIZE + INVERS)
+  drawOutputBar(8, FOOTER_TOP + 4, steering)
+  lcd.drawText(46, FOOTER_TEXT_Y, tostring(math.floor(steering * 100 / 1024 + 0.5)),
+    RIGHT + SMLSIZE + INVERS)
+  lcd.drawText(48, FOOTER_TEXT_Y, "T", SMLSIZE + INVERS)
+  drawOutputBar(54, FOOTER_TOP + 4, throttle)
+  lcd.drawText(92, FOOTER_TEXT_Y, tostring(math.floor(throttle * 100 / 1024 + 0.5)),
+    RIGHT + SMLSIZE + INVERS)
+  local now = getDateTime()
+  lcd.drawText(W - 1, FOOTER_TEXT_Y, string.format("%02d:%02d", now.hour, now.min),
+    RIGHT + SMLSIZE + INVERS)
 
   return 0
 end
