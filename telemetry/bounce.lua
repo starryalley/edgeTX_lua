@@ -2,7 +2,13 @@
 -- Read-only: all driving logic lives in the model and optional bcoast mixer.
 -- L2 independent; L5 Trail coast. GV2 limit, GV3 expo, GV5 coast in tenths.
 local ids = {}
+-- Standard LiPo packs. Set CELL_COUNT to 2 or 3 to override voltage detection.
+local CELL_COUNT = 0
+local LOW_CELL = 3.50
+local RECOVER_CELL = 3.60
+local cells, lowBattery = nil, false
 local function init()
+  cells, lowBattery = CELL_COUNT ~= 0 and CELL_COUNT or nil, false
   for _, name in ipairs({'RxBt', 'RQly', '1RSS', 'tx-voltage', 'ch1', 'ch2', 'ch3', 's1'}) do
     local info = getFieldInfo(name)
     ids[name] = info and info.id or name
@@ -16,6 +22,24 @@ local function sensor(name)
   local v, current = getSourceValue(ids[name] or name)
   if current and type(v) == 'number' then return v end
   return nil
+end
+local function batteryStatus()
+  local voltage = sensor('RxBt')
+  if not voltage or voltage <= 0 then return nil, nil, false end
+  if CELL_COUNT == 0 then
+    -- Latch the highest detected cell count until the script/model reloads.
+    -- A sagging 3S pack must never become a seemingly healthy 2S pack.
+    if voltage > 8.6 and voltage <= 12.9 then cells = 3
+    elseif not cells and voltage >= 5.0 and voltage <= 8.6 then cells = 2 end
+  end
+  if not cells then return voltage, nil, false end
+  local average = voltage/cells
+  if average <= LOW_CELL then lowBattery = true
+  elseif average >= RECOVER_CELL then lowBattery = false end
+  return voltage, average, lowBattery
+end
+local function background()
+  batteryStatus()
 end
 local function pct(v)
   return math.floor(v*100/1024+0.5)
@@ -73,9 +97,11 @@ local function run()
     text(x+39,36,i == 2 and limit..'%' or string.format('%+d',pct(v)),RIGHT)
     bar(x+6,43,v)
   end
-  local battery, lq, rssi = sensor('RxBt'), sensor('RQly'), sensor('1RSS')
-  text(1,47,battery and string.format('%.1fV',battery) or '--.-V')
-  text(48,47,lq and string.format('LQ%03d',lq) or 'LQ---')
+  local battery, cell, low = batteryStatus()
+  local lq, rssi = sensor('RQly'), sensor('1RSS')
+  text(1,47,battery and string.format('%.1fV',battery) or '--.-V',low and BLINK or 0)
+  text(29,47,cell and string.format('~%.1f/c',cell) or '~--.-/c',low and BLINK or 0)
+  text(65,47,lq and string.format('LQ%03d',lq) or 'LQ---')
   text(127,47,rssi and string.format('%ddB',rssi) or 'NO RX',RIGHT)
   lcd.drawFilledRectangle(0,56,128,8)
   text(1,57,'D'..timer(0,false),INVERS)
@@ -85,4 +111,4 @@ local function run()
   text(127,57,string.format('TX%.1fV',value('tx-voltage')),INVERS+RIGHT)
   return 0
 end
-return {init=init,run=run}
+return {init=init,run=run,background=background}
